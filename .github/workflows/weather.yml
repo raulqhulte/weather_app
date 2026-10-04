@@ -1,0 +1,35 @@
+name: Morning cycling weather
+
+on:
+  schedule:
+    - cron: '0 7 * * 1-5'
+      timezone: Europe/Amsterdam
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: morning-weather
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Test recommendation rules
+        run: python -m unittest discover -s tests -v
+
+      - name: Send forecast
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python bot.py --send
